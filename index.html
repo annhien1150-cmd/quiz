@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nuclear Core - Lò Phản Ứng Tương Lai</title>
+    <style>
+        :root {
+            --primary: #00f2fe;
+            --secondary: #4facfe;
+            --accent: #ff0844;
+            --bg-dark: #0a0e17;
+            --card-bg: rgba(16, 24, 40, 0.85);
+            --text-light: #f1f5f9;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        header {
+            width: 100%;
+            padding: 15px 30px;
+            background: rgba(10, 14, 23, 0.9);
+            border-bottom: 1px solid rgba(0, 242, 254, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 242, 254, 0.5);
+        }
+
+        .score-board {
+            font-size: 1.1rem;
+            background: rgba(0, 242, 254, 0.1);
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--primary);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 20px auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Canvas mô phỏng Hạt nhân */
+        .simulation-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            text-align: center;
+        }
+
+        #canvas3d {
+            width: 100%;
+            height: 250px;
+            background: #000;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
+
+        /* Khung trợ lý AI */
+        .ai-assistant {
+            background: linear-gradient(135deg, rgba(79, 172, 254, 0.15), rgba(0, 242, 254, 0.05));
+            border-left: 4px solid var(--primary);
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .ai-avatar {
+            width: 45px;
+            height: 45px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #000;
+            font-weight: bold;
+            box-shadow: 0 0 15px var(--primary);
+        }
+
+        /* Card câu hỏi Quiz */
+        .quiz-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .category-tag {
+            display: inline-block;
+            padding: 5px 12px;
+            background: rgba(0, 242, 254, 0.2);
+            color: var(--primary);
+            border-radius: 12px;
+            font-size: 0.85rem;
+            margin-bottom: 12px;
+        }
+
+        .question-text {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media(min-width: 600px) {
+            .options-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: var(--text-light);
+            padding: 14px 18px;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover {
+            background: rgba(0, 242, 254, 0.15);
+            border-color: var(--primary);
+        }
+
+        .option-btn.correct {
+            background: rgba(0, 230, 118, 0.25) !important;
+            border-color: #00e676 !important;
+            color: #00e676;
+        }
+
+        .option-btn.wrong {
+            background: rgba(255, 82, 82, 0.25) !important;
+            border-color: #ff5252 !important;
+            color: #ff5252;
+        }
+
+        /* Khung giải thích */
+        .explanation-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: none;
+            border-left: 3px solid #ffb300;
+        }
+
+        /* Nút chuyển câu */
+        .next-btn {
+            margin-top: 20px;
+            padding: 12px 25px;
+            background: linear-gradient(90deg, var(--secondary), var(--primary));
+            border: none;
+            color: #000;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            float: right;
+            display: none;
+        }
+
+        /* Màn hình kết thúc */
+        .result-screen {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .result-title {
+            font-size: 2rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-title">⚛️ NUCLEAR CORE - GAME QUIZ AI</div>
+        <div class="score-board">Điểm: <span id="score">0</span> / 150</div>
+    </header>
+
+    <div class="container">
+        <!-- AI Host Message -->
+        <div class="ai-assistant">
+            <div class="ai-avatar">AI</div>
+            <div class="ai-text" id="ai-msg">Xin chào các kỹ sư hạt nhân! Hãy trả lời chính xác các câu hỏi để tích lũy năng lượng cho lò phản ứng.</div>
+        </div>
+
+        <!-- Mô phỏng 3D Canvas -->
+        <div class="simulation-card">
+            <h3 id="sim-title">Mô phỏng: Phóng xạ nhân tạo</h3>
+            <canvas id="canvas3d"></canvas>
+        </div>
+
+        <!-- Khung Quiz Game -->
+        <div class="quiz-card" id="quiz-box">
+            <div class="category-tag" id="category">Phần 1: Phóng xạ nhân tạo</div>
+            <div class="question-text" id="question">Đang tải câu hỏi...</div>
+            <div class="options-grid" id="options"></div>
+            <div class="explanation-box" id="explanation"></div>
+            <button class="next-btn" id="next-btn" onclick="nextQuestion()">Câu tiếp theo ➔</button>
+        </div>
+
+        <!-- Màn hình Tổng kết -->
+        <div class="quiz-card result-screen" id="result-box">
+            <h2 class="result-title">🎉 HOÀN THÀNH THỬ THÁCH!</h2>
+            <p style="font-size: 1.2rem; margin-bottom: 20px;" id="final-score"></p>
+            <p id="final-eval" style="color: #aaa; margin-bottom: 25px;"></p>
+            <button class="next-btn" style="display:inline-block; float:none;" onclick="location.reload()">Chơi lại từ đầu 🔄</button>
+        </div>
+    </div>
+
+    <script>
+        // -------------------------------------------------------------
+        // 1. DỮ LIỆU CÂU HỎI (15 CÂU CHIA LÀM 3 PHẦN)
+        // -------------------------------------------------------------
+        const quizData = [
+            // --- PHẦN 1: PHÓNG XẠ NHÂN TẠO (5 Câu) ---
+            {
+                part: "Phần 1: Phóng xạ nhân tạo",
+                sim: "Phóng xạ nhân tạo (Bắn phá hạt nhân)",
+                question: "1. Hiện tượng phóng xạ nhân tạo khác với phóng xạ tự nhiên ở điểm cốt lõi nào?",
+                options: [
+                    "A. Do con người chủ động tác động bằng cách bắn phá hạt nhân bền",
+                    "B. Tạo ra các tia phóng xạ có năng lượng hoàn toàn khác",
+                    "C. Không phát ra tia alpha, beta hay gamma",
+                    "D. Chỉ xảy ra ở các nguyên tố siêu nặng"
+                ],
+                correct: 0,
+                exp: "Giải thích: Phóng xạ nhân tạo do con người chủ động dùng hạt cơ bản (neutron, alpha...) bắn phá hạt nhân bền[cite: 1, 2], trong khi phóng xạ tự nhiên diễn ra hoàn toàn tự phát."
+            },
+            {
+                part: "Phần 1: Phóng xạ nhân tạo",
+                sim: "Phóng xạ nhân tạo (Bắn phá hạt nhân)",
+                question: "2. Ai là những người đầu tiên phát hiện ra hiện tượng phóng xạ nhân tạo vào năm 1934?",
+                options: [
+                    "A. Marie Curie và Pierre Curie",
+                    "B. Irène Joliot-Curie và Frédéric Joliot",
+                    "C. Otto Hahn và Lise Meitner",
+                    "D. Ernest Rutherford và Niels Bohr"
+                ],
+                correct: 1,
+                exp: "Giải thích: Vợ chồng Irène Joliot-Curie và Frédéric Joliot phát hiện ra phóng xạ nhân tạo khi bắn hạt alpha vào lá Nhôm[cite: 1, 2]."
+            },
+            {
+                part: "Phần 1: Phóng xạ nhân tạo",
+                sim: "Phóng xạ nhân tạo (Bắn phá hạt nhân)",
+                question: "3. Tác nhân nào thường được sử dụng để kích thích hạt nhân bền trở thành đồng vị phóng xạ nhân tạo?",
+                options: [
+                    "A. Bức xạ hồng ngoại",
+                    "B. Bắn phá bằng neutron, proton, hạt alpha hoặc máy gia tốc",
+                    "C. Đun nóng ở nhiệt độ cao",
+                    "D. Tác động bằng dòng điện cao thế"
+                ],
+                correct: 1,
+                exp: "Giải thích: Con người dùng các hạt như neutron, proton, alpha... bắn phá vào hạt nhân để làm mất tính bền vững[cite: 1, 2]."
+            },
+            {
+                part: "Phần 1: Phóng xạ nhân tạo",
+                sim: "Phóng xạ nhân tạo (Bắn phá hạt nhân)",
+                question: "4. Đồng vị phóng xạ nhân tạo phát ra các tia phóng xạ nào?",
+                options: [
+                    "A. Chỉ phát ra tia X",
+                    "B. Các tia phóng xạ Alpha (α), Beta (β), Gamma (γ)",
+                    "C. Chỉ phát ra dòng electron",
+                    "D. Không phát ra tia phóng xạ"
+                ],
+                correct: 1,
+                exp: "Giải thích: Phóng xạ nhân tạo vẫn phát ra các tia phóng xạ α, β, γ tương tự phóng xạ tự nhiên[cite: 1, 2]."
+            },
+            {
+                part: "Phần 1: Phóng xạ nhân tạo",
+                sim: "Phóng xạ nhân tạo (Bắn phá hạt nhân)",
+                question: "5. Ứng dụng quan trọng nhất của đồng vị phóng xạ nhân tạo trong Y học là gì?",
+                options: [
+                    "A. Sản xuất vắc-xin",
+                    "B. Chẩn đoán hình ảnh (PET) và điều trị ung thư (xạ trị)",
+                    "C. Thay thế kháng sinh",
+                    "D. Phẫu thuật vô trùng"
+                ],
+                correct: 1,
+                exp: "Giải thích: Đồng vị phóng xạ nhân tạo được ứng dụng rộng rãi trong y học để chẩn đoán (PET) và điều trị ung thư[cite: 1]."
+            },
+
+            // --- PHẦN 2: PHẢN ỨNG PHÂN HẠCH (5 Câu) ---
+            {
+                part: "Phần 2: Phản ứng phân hạch",
+                sim: "Phản ứng phân hạch (Fission)",
+                question: "6. Phản ứng phân hạch là quá trình nào sau đây?",
+                options: [
+                    "A. Kết hợp hai hạt nhân nhẹ thành hạt nhân nặng",
+                    "B. Một hạt nhân nặng hấp thụ neutron chậm rồi vỡ thành các hạt nhân nhẹ hơn",
+                    "C. Hạt nhân tự phát ra tia phóng xạ",
+                    "D. Sự trao đổi electron giữa các nguyên tử"
+                ],
+                correct: 1,
+                exp: "Giải thích: Phân hạch là quá trình hạt nhân nặng (U-235, Pu-239) hấp thụ 1 neutron chậm và vỡ thành các hạt nhân nhẹ hơn[cite: 1, 2, 3]."
+            },
+            {
+                part: "Phần 2: Phản ứng phân hạch",
+                sim: "Phản ứng phân hạch (Fission)",
+                question: "7. Năng lượng tỏa ra trung bình khi phân hạch 1 hạt nhân Uranium-235 (U-235) là bao nhiêu?",
+                options: [
+                    "A. Khoảng 17.6 MeV",
+                    "B. Khoảng 200 MeV",
+                    "C. Khoảng 1000 MeV",
+                    "D. Khoảng 2 MeV"
+                ],
+                correct: 1,
+                exp: "Giải thích: Một hạt nhân U-235 phân hạch tỏa ra khoảng 200 MeV năng lượng[cite: 1, 2]."
+            },
+            {
+                part: "Phần 2: Phản ứng phân hạch",
+                sim: "Phản ứng phân hạch (Fission)",
+                question: "8. Yếu tố nào giúp phản ứng phân hạch có thể tạo thành phản ứng dây chuyền?",
+                options: [
+                    "A. Do tỏa nhiệt lượng cao",
+                    "B. Mỗi phản ứng sinh ra thêm 2 đến 3 neutron mới",
+                    "C. Nhờ sự có mặt của tia Gamma",
+                    "D. Do sự tương tác của lực đẩy tĩnh điện"
+                ],
+                correct: 1,
+                exp: "Giải thích: Các neutron sinh ra từ phân hạch ban đầu tiếp tục kích thích các hạt nhân U-235 lân cận[cite: 1, 2, 3]."
+            },
+            {
+                part: "Phần 2: Phản ứng phân hạch",
+                sim: "Phản ứng phân hạch (Fission)",
+                question: "9. Điều gì xảy ra nếu phản ứng phân hạch dây chuyền không được kiểm soát?",
+                options: [
+                    "A. Phản ứng tự dập tắt",
+                    "B. Tạo ra nguồn điện liên tục",
+                    "C. Gây ra nổ lớn (nguyên lý bom nguyên tử)",
+                    "D. Biến đổi thành phản ứng nhiệt hạch"
+                ],
+                correct: 2,
+                exp: "Giải thích: Phản ứng dây chuyền không kiểm soát sẽ bùng nổ năng lượng cực nhanh gây nổ (bom A)[cite: 1, 2, 3]."
+            },
+            {
+                part: "Phần 2: Phản ứng phân hạch",
+                sim: "Phản ứng phân hạch (Fission)",
+                question: "10. Hạn chế/Nhược điểm lớn nhất của năng lượng phân hạch hiện nay là gì?",
+                options: [
+                    "A. Nhiên liệu quá hiếm không thể khai thác",
+                    "B. Sinh ra rác thải phóng xạ tồn tại rất lâu và nguy cơ sự cố hạt nhân",
+                    "C. Không thể phát ra điện năng",
+                    "D. Chi phí mua nhiên liệu quá rẻ"
+                ],
+                correct: 1,
+                exp: "Giải thích: Nhược điểm chính của lò phân hạch là chất thải phóng xạ độc hại trường tồn và rủi ro sự cố[cite: 1, 2]."
+            },
+
+            // --- PHẦN 3: PHẢN ỨNG NHIỆT HẠCH (5 Câu) ---
+            {
+                part: "Phần 3: Phản ứng nhiệt hạch",
+                sim: "Phản ứng nhiệt hạch (Fusion)",
+                question: "11. Bản chất của phản ứng nhiệt hạch (tổng hợp hạt nhân) là gì?",
+                options: [
+                    "A. Bẻ đôi hạt nhân nặng",
+                    "B. Hai hay nhiều hạt nhân nhẹ kết hợp lại thành hạt nhân nặng hơn",
+                    "C. Phân rã tia beta",
+                    "D. Bắn phá electron vào hạt nhân"
+                ],
+                correct: 1,
+                exp: "Giải thích: Nhiệt hạch là quá trình tổng hợp các hạt nhân nhẹ (Deuterium, Tritium) thành hạt nhân nặng hơn (Helium)[cite: 1, 2]."
+            },
+            {
+                part: "Phần 3: Phản ứng nhiệt hạch",
+                sim: "Phản ứng nhiệt hạch (Fusion)",
+                question: "12. Điều kiện bắt buộc để phản ứng nhiệt hạch có thể xảy ra là gì?",
+                options: [
+                    "A. Nhiệt độ cực cao (hàng chục đến hàng trăm triệu độ C) và áp suất lớn",
+                    "B. Môi trường chân không tuyệt đối và nhiệt độ âm",
+                    "C. Chỉ cần có sự xuất hiện của ánh sáng mặt trời",
+                    "D. Cần lượng lớn neutron chậm"
+                ],
+                correct: 0,
+                exp: "Giải thích: Cần nhiệt độ cực cao để các hạt nhân vượt qua hàng rào lực đẩy tĩnh điện Coulomb và áp sát nhau[cite: 1, 2]."
+            },
+            {
+                part: "Phần 3: Phản ứng nhiệt hạch",
+                sim: "Phản ứng nhiệt hạch (Fusion)",
+                question: "13. Phản ứng tổng hợp Deuterium (D) và Tritium (T) tạo thành Helium và neutron giải phóng năng lượng là bao nhiêu?",
+                options: [
+                    "A. 200 MeV",
+                    "B. 17.6 MeV",
+                    "C. 50 MeV",
+                    "D. 100 MeV"
+                ],
+                correct: 1,
+                exp: "Giải thích: Phản ứng D + T -> He + n giải phóng khoảng 17.6 MeV năng lượng[cite: 1, 2]."
+            },
+            {
+                part: "Phần 3: Phản ứng nhiệt hạch",
+                sim: "Phản ứng nhiệt hạch (Fusion)",
+                question: "14. Ưu điểm nổi bật của nhiệt hạch so với phân hạch là gì?",
+                options: [
+                    "A. Nhiên liệu (Hydro trong nước biển) dồi dào, sạch, ít/không rác thải phóng xạ lâu năm",
+                    "B. Dễ chế tạo lò phản ứng hơn phân hạch",
+                    "C. Không cần nhiệt độ ban đầu",
+                    "D. Phản ứng diễn ra rất chậm"
+                ],
+                correct: 0,
+                exp: "Giải thích: Nhiên liệu Hydro có sẵn trong nước biển[cite: 1], sản phẩm sạch và không tạo chất thải phóng xạ nguy hại trường tồn[cite: 1]."
+            },
+            {
+                part: "Phần 3: Phản ứng nhiệt hạch",
+                sim: "Phản ứng nhiệt hạch (Fusion)",
+                question: "15. Hiện nay, rào cản chính khiến phản ứng nhiệt hạch chưa được thương mại hóa là gì?",
+                options: [
+                    "A. Cạn kiệt nguồn nhiên liệu",
+                    "B. Kỹ thuật duy trì và giam cầm trạng thái Plasma nhiệt độ cao cực kỳ phức tạp",
+                    "C. Nhiệt hạch tạo ra quá ít năng lượng",
+                    "D. Phản ứng bị cấm bởi luật pháp quốc tế"
+                ],
+                correct: 1,
+                exp: "Giải thích: Việc kiểm soát và duy trì trạng thái Plasma ở hàng trăm triệu độ C đòi hỏi công nghệ cực kỳ phức tạp (như lò Tokamak)."
+            }
+        ];
+
+        // -------------------------------------------------------------
+        // 2. BIẾN QUẢN LÝ TRẠNG THÁI GAME
+        // -------------------------------------------------------------
+        let currentIdx = 0;
+        let score = 0;
+        let answered = false;
+
+        // Elements
+        const qText = document.getElementById('question');
+        const optGrid = document.getElementById('options');
+        const categoryTag = document.getElementById('category');
+        const expBox = document.getElementById('explanation');
+        const nextBtn = document.getElementById('next-btn');
+        const scoreDisplay = document.getElementById('score');
+        const aiMsg = document.getElementById('ai-msg');
+        const simTitle = document.getElementById('sim-title');
+
+        // -------------------------------------------------------------
+        // 3. KHỞI TẠO VÀ HIỂN THỊ CÂU HỎI
+        // -------------------------------------------------------------
+        function loadQuestion() {
+            answered = false;
+            const item = quizData[currentIdx];
+
+            categoryTag.innerText = item.part;
+            simTitle.innerText = "Mô phỏng: " + item.sim;
+            qText.innerText = item.question;
+            expBox.style.display = 'none';
+            nextBtn.style.display = 'none';
+            optGrid.innerHTML = '';
+
+            // Update AI message
+            if(currentIdx === 0) aiMsg.innerText = "Bắt đầu Phần 1: Phóng xạ nhân tạo! Hãy chọn đáp án chính xác nhất.";
+            else if(currentIdx === 5) aiMsg.innerText = "Chuyển sang Phần 2: Phản ứng phân hạch! Hãy cẩn thận với năng lượng dây chuyền.";
+            else if(currentIdx === 10) aiMsg.innerText = "Vòng cuối: Phản ứng nhiệt hạch! Hãy giải phóng sức mạnh từ lòng MẶT TRỜI!";
+
+            item.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(idx);
+                optGrid.appendChild(btn);
+            });
+
+            // Trigger canvas animation update
+            triggerSim(currentIdx);
+        }
+
+        function checkAnswer(selectedIdx) {
+            if (answered) return;
+            answered = true;
+
+            const item = quizData[currentIdx];
+            const buttons = optGrid.querySelectorAll('.option-btn');
+
+            if (selectedIdx === item.correct) {
+                buttons[selectedIdx].classList.add('correct');
+                score += 10;
+                scoreDisplay.innerText = score;
+                aiMsg.innerText = "Chính xác! Cung cấp thêm +10% năng lượng cho lò phản ứng!";
+            } else {
+                buttons[selectedIdx].classList.add('wrong');
+                buttons[item.correct].classList.add('correct');
+                aiMsg.innerText = "Chưa chính xác! Hãy đọc kỹ phần giải thích phía dưới.";
+            }
+
+            expBox.innerText = item.exp;
+            expBox.style.display = 'block';
+            nextBtn.style.display = 'block';
+        }
+
+        function nextQuestion() {
+            currentIdx++;
+            if (currentIdx < quizData.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quiz-box').style.display = 'none';
+            document.getElementById('result-box').style.display = 'block';
+            document.getElementById('final-score').innerText = `Tổng điểm thu được: ${score} / 150 Điểm`;
+
+            let evalText = "";
+            if(score >= 130) evalText = "Đánh giá AI: Xuất sắc! Bạn là một Kỹ sư Hạt nhân Cấp cao!";
+            else if(score >= 90) evalText = "Đánh giá AI: Khá tốt! Bạn đã nắm vững kiến thức trọng tâm SGK.";
+            else evalText = "Đánh giá AI: Cần ôn tập lại các khái niệm Phân hạch & Nhiệt hạch!";
+            
+            document.getElementById('final-eval').innerText = evalText;
+            aiMsg.innerText = "Cuộc đua năng lượng đã kết thúc! Cảm ơn cả lớp đã tham gia.";
+        }
+
+        // -------------------------------------------------------------
+        // 4. MÔ PHỎNG CANVAS 2D/3D TƯƠNG TÁC ĐỘNG
+        // -------------------------------------------------------------
+        const canvas = document.getElementById('canvas3d');
+        const ctx = canvas.getContext('2d');
+        let animFrame;
+        let angle = 0;
+
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function triggerSim(idx) {
+            cancelAnimationFrame(animFrame);
+            if (idx < 5) drawArtificialRadioactivity();
+            else if (idx < 10) drawFission();
+            else drawFusion();
+        }
+
+        // Mô phỏng 1: Phóng xạ nhân tạo
+        function drawArtificialRadioactivity() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Target nucleus
+            ctx.beginPath();
+            ctx.arc(cx, cy, 35, 0, Math.PI * 2);
+            ctx.fillStyle = '#00f2fe';
+            ctx.fill();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00f2fe';
+
+            // Incoming particle
+            const px = cx - 120 + (angle % 120);
+            ctx.beginPath();
+            ctx.arc(px, cy, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff0844';
+            ctx.fill();
+
+            angle += 2;
+            animFrame = requestAnimationFrame(drawArtificialRadioactivity);
+        }
+
+        // Mô phỏng 2: Phân hạch
+        function drawFission() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const shift = (Math.sin(angle * 0.05) + 1) * 25;
+
+            // Fragment 1
+            ctx.beginPath();
+            ctx.arc(cx - shift, cy, 25, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffb300';
+            ctx.fill();
+
+            // Fragment 2
+            ctx.beginPath();
+            ctx.arc(cx + shift, cy, 25, 0, Math.PI * 2);
+            ctx.fillStyle = '#ff5252';
+            ctx.fill();
+
+            angle++;
+            animFrame = requestAnimationFrame(drawFission);
+        }
+
+        // Mô phỏng 3: Nhiệt hạch
+        function drawFusion() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const dist = Math.max(0, 80 - (angle % 100));
+
+            // Deuterium & Tritium approaching
+            ctx.beginPath();
+            ctx.arc(cx - dist, cy, 18, 0, Math.PI * 2);
+            ctx.fillStyle = '#00e676';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(cx + dist, cy, 18, 0, Math.PI * 2);
+            ctx.fillStyle = '#3d5aff';
+            ctx.fill();
+
+            if (dist === 0) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, 45, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.fill();
+            }
+
+            angle += 1.5;
+            animFrame = requestAnimationFrame(drawFusion);
+        }
+
+        // Run Init
+        loadQuestion();
+    </script>
+</body>
+</html>
